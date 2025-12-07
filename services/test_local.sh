@@ -3,7 +3,7 @@
 # Test script for local development
 # Make sure both services are running before testing
 
-echo "🧪 Testing Main API and Auxiliary Service"
+echo "Testing Main API and Auxiliary Service"
 echo "=========================================="
 echo ""
 
@@ -19,9 +19,9 @@ AUX_SERVICE_URL="http://localhost:3001"
 echo "1. Testing Auxiliary Service Health..."
 response=$(curl -s -o /dev/null -w "%{http_code}" $AUX_SERVICE_URL/health)
 if [ "$response" == "200" ]; then
-    echo -e "${GREEN}✅ Auxiliary Service is healthy${NC}"
+    echo -e "${GREEN}[OK] Auxiliary Service is healthy${NC}"
 else
-    echo -e "${RED}❌ Auxiliary Service is not responding (HTTP $response)${NC}"
+    echo -e "${RED}[ERROR] Auxiliary Service is not responding (HTTP $response)${NC}"
     echo "   Make sure Auxiliary Service is running on port 3001"
     exit 1
 fi
@@ -31,9 +31,9 @@ echo ""
 echo "2. Testing Main API Health..."
 response=$(curl -s -o /dev/null -w "%{http_code}" $MAIN_API_URL/health)
 if [ "$response" == "200" ]; then
-    echo -e "${GREEN}✅ Main API is healthy${NC}"
+    echo -e "${GREEN}[OK] Main API is healthy${NC}"
 else
-    echo -e "${RED}❌ Main API is not responding (HTTP $response)${NC}"
+    echo -e "${RED}[ERROR] Main API is not responding (HTTP $response)${NC}"
     echo "   Make sure Main API is running on port 3000"
     exit 1
 fi
@@ -63,5 +63,5 @@ curl -s $MAIN_API_URL/parameters/kantox-challenge/app-version | python3 -m json.
 
 echo ""
 echo "=========================================="
-echo -e "${GREEN}✅ All tests completed!${NC}"
+echo -e "${GREEN}[OK] All tests completed!${NC}"
 
