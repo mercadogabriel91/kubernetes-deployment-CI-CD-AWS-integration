@@ -1,0 +1,16 @@
+{
+  "name": "kantox-services",
+  "version": "1.0.0",
+  "description": "Kantox Challenge Services - Main API and Auxiliary Service",
+  "private": true,
+  "packageManager": "pnpm@8.15.0",
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=8.0.0"
+  },
+  "scripts": {
+    "install:all": "pnpm --filter './auxiliary-service' install && pnpm --filter './main-api' install",
+    "build:all": "pnpm --filter './auxiliary-service' build && pnpm --filter './main-api' build"
+  }
+}
+
