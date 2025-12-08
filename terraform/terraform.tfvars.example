@@ -1,0 +1,23 @@
+# Copy this file to terraform.tfvars and fill in your values
+# terraform.tfvars is gitignored and should not be committed
+
+aws_region              = "us-east-1"
+project_name            = "k-challenge"
+environment             = "dev"
+app_version             = "1.0.0"
+github_repository       = "your-username/kubernetes-deployment-CI-CD-AWS-integration"
+
+# EKS Configuration (for IRSA - IAM Roles for Service Accounts)
+# Note: This Terraform does NOT create the EKS cluster - it only creates IAM roles for an existing cluster
+
+# Option 1: If you have an EKS cluster, provide these values:
+# eks_cluster_name        = "my-eks-cluster"
+# eks_oidc_provider_id   = "A1B2YOUR_OIDC_PROVIDER_IDBCDEF" # Get from: aws eks describe-cluster --name <name> --query 'cluster.identity.oidc.issuer'
+
+# Option 2: If using local Kubernetes (minikube/kind), leave empty:
+eks_cluster_name        = "" # Leave empty for local Kubernetes or if not using EKS
+eks_oidc_provider_id   = "" # Leave empty for local Kubernetes or if not using EKS/IRSA
+
+kubernetes_namespace    = "k-challenge"
+kubernetes_service_account = "k-app-sa"
+
