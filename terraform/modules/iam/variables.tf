@@ -24,6 +24,12 @@ variable "parameter_store_arn" {
   type        = string
 }
 
+variable "ecr_repository_arns" {
+  description = "List of ECR repository ARNs"
+  type        = list(string)
+  default     = []
+}
+
 variable "eks_cluster_name" {
   description = "Name of the EKS cluster"
   type        = string

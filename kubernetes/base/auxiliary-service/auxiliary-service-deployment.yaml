@@ -1,0 +1,81 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: auxiliary-service
+  namespace: k-challenge-namespace
+  labels:
+    app: auxiliary-service
+    environment: dev
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: auxiliary-service
+  template:
+    metadata:
+      labels:
+        app: auxiliary-service
+        environment: dev
+    spec:
+      serviceAccountName: k-challenge-app-sa
+      imagePullSecrets:
+      - name: ecr-registry-secret
+      containers:
+      - name: auxiliary-service
+        image: auxiliary-service:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 3001
+          name: http
+        env:
+        - name: PORT
+          valueFrom:
+            configMapKeyRef:
+              name: k-challenge-config
+              key: AUXILIARY_SERVICE_PORT
+        - name: VERSION
+          valueFrom:
+            configMapKeyRef:
+              name: k-challenge-config
+              key: VERSION
+        - name: AWS_DEFAULT_REGION
+          valueFrom:
+            configMapKeyRef:
+              name: k-challenge-config
+              key: AWS_DEFAULT_REGION
+        # AWS credentials from Secret (for local K8s)
+        # For EKS with IRSA, remove these and use Service Account annotation instead
+        - name: AWS_ACCESS_KEY_ID
+          valueFrom:
+            secretKeyRef:
+              name: aws-credentials
+              key: AWS_ACCESS_KEY_ID
+        - name: AWS_SECRET_ACCESS_KEY
+          valueFrom:
+            secretKeyRef:
+              name: aws-credentials
+              key: AWS_SECRET_ACCESS_KEY
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 3001
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 3001
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "500m"
+

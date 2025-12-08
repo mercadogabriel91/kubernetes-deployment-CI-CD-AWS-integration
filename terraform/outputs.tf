@@ -28,3 +28,21 @@ output "oidc_provider_arn" {
   value       = module.iam.oidc_provider_arn
 }
 
+output "ecr_auxiliary_service_repository_url" {
+  description = "ECR repository URL for Auxiliary Service"
+  value       = module.ecr.auxiliary_service_repository_url
+}
+
+output "ecr_main_api_repository_url" {
+  description = "ECR repository URL for Main API"
+  value       = module.ecr.main_api_repository_url
+}
+
+output "ecr_repository_urls" {
+  description = "Map of ECR repository URLs"
+  value = {
+    auxiliary_service = module.ecr.auxiliary_service_repository_url
+    main_api          = module.ecr.main_api_repository_url
+  }
+}
+

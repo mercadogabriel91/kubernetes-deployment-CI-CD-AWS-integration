@@ -48,6 +48,14 @@ module "parameter_store" {
   app_version  = var.app_version
 }
 
+# ECR Module
+module "ecr" {
+  source = "./modules/ecr"
+
+  project_name = var.project_name
+  environment  = var.environment
+}
+
 # IAM Module
 module "iam" {
   source = "./modules/iam"
@@ -57,6 +65,7 @@ module "iam" {
   github_repository          = var.github_repository
   s3_bucket_arns             = module.s3.bucket_arns
   parameter_store_arn        = module.parameter_store.parameter_store_arn
+  ecr_repository_arns        = [module.ecr.auxiliary_service_repository_arn, module.ecr.main_api_repository_arn]
   eks_cluster_name           = var.eks_cluster_name
   eks_oidc_provider_id       = var.eks_oidc_provider_id
   kubernetes_namespace       = var.kubernetes_namespace

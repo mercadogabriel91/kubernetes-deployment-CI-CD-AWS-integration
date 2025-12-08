@@ -1,0 +1,13 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: k-challenge-namespace
+
+resources:
+  - configmap.yaml
+  # Note: Secrets are gitignored and must be created manually
+  # - aws-credentials-secret.yaml
+  # - ecr-registry-secret.yaml
+
+# Labels are defined directly in the resource files
+

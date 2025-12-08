@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: k-challenge-namespace
+  labels:
+    name: k-challenge-namespace
+    environment: dev
+    managed-by: terraform
+

@@ -37,3 +37,8 @@ override.tf
 override.tf.json
 *_override.tf
 *_override.tf.json
+
+# Kubernetes Secrets
+kubernetes/**/aws-credentials-secret.yaml
+kubernetes/**/*-secret.yaml
+!kubernetes/**/*-secret.yaml.example

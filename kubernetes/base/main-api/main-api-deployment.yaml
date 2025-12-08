@@ -1,0 +1,69 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: main-api
+  namespace: k-challenge-namespace
+  labels:
+    app: main-api
+    environment: dev
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: main-api
+  template:
+    metadata:
+      labels:
+        app: main-api
+        environment: dev
+    spec:
+      serviceAccountName: k-challenge-app-sa
+      imagePullSecrets:
+      - name: ecr-registry-secret
+      containers:
+      - name: main-api
+        image: main-api:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 3000
+          name: http
+        env:
+        - name: PORT
+          valueFrom:
+            configMapKeyRef:
+              name: k-challenge-config
+              key: MAIN_API_PORT
+        - name: VERSION
+          valueFrom:
+            configMapKeyRef:
+              name: k-challenge-config
+              key: VERSION
+        - name: AUXILIARY_SERVICE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: k-challenge-config
+              key: AUXILIARY_SERVICE_URL
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 3000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 3000
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "500m"
+

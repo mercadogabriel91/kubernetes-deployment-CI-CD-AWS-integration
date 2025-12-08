@@ -1,0 +1,17 @@
+# Configuration file for dev environment
+# Copy this to config.yaml and customize as needed
+# This file is gitignored - actual values should be set via CI/CD or environment variables
+
+# ECR Registry Configuration
+ECR_REGISTRY: "your-account-number.dkr.ecr.your-region.amazonaws.com"
+ECR_REGION: "your-region"
+AWS_ACCOUNT_ID: "your-account-number"
+
+# Image Tags
+AUXILIARY_SERVICE_IMAGE_TAG: "latest"
+MAIN_API_IMAGE_TAG: "latest"
+
+# Full Image URLs (for reference)
+AUXILIARY_SERVICE_IMAGE: "${ECR_REGISTRY}/k-challenge-dev-auxiliary-service:${AUXILIARY_SERVICE_IMAGE_TAG}"
+MAIN_API_IMAGE: "${ECR_REGISTRY}/k-challenge-dev-main-api:${MAIN_API_IMAGE_TAG}"
+

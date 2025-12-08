@@ -1,0 +1,19 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: k-challenge-namespace
+
+# Resources organized by layer:
+# 1. Infrastructure (cluster-level: namespace, service account)
+# 2. Shared (used by all services: configmap, secrets)
+# 3. Application services (deployments and services)
+resources:
+  - infrastructure/
+  - shared/
+  - auxiliary-service/
+  - main-api/
+
+# Note: We avoid commonLabels at the root level because it would modify
+# Deployment selectors (which are immutable). Labels are defined directly
+# in each resource file for better control.
+

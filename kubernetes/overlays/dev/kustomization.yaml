@@ -1,0 +1,24 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: k-challenge-namespace
+
+# Base configuration
+resources:
+  - ../../base
+
+# Image replacements - these override the placeholder images in base deployments
+# IMPORTANT: Replace YOUR-AWS-ACCOUNT-ID with your actual AWS account ID before deploying
+# You can find your account ID with: aws sts get-caller-identity --query Account --output text
+images:
+  - name: auxiliary-service
+    newName: YOUR-AWS-ACCOUNT-ID.dkr.ecr.us-east-1.amazonaws.com/k-challenge-dev-auxiliary-service
+    newTag: latest
+  - name: main-api
+    newName: YOUR-AWS-ACCOUNT-ID.dkr.ecr.us-east-1.amazonaws.com/k-challenge-dev-main-api
+    newTag: latest
+
+# Note: We don't use commonLabels here because it would modify
+# Deployment selectors (which are immutable). Labels are defined
+# directly in the deployment files.
+

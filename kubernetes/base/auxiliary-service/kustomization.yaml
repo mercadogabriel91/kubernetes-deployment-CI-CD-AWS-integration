@@ -1,0 +1,13 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: k-challenge-namespace
+
+resources:
+  - auxiliary-service-deployment.yaml
+  - auxiliary-service-service.yaml
+
+# Note: We don't use commonLabels here because it would modify
+# the Deployment selector (which is immutable). Labels are defined
+# directly in the deployment files.
+
