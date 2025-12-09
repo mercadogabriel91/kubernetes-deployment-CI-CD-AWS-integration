@@ -10,12 +10,13 @@ resources:
 # Image replacements - these override the placeholder images in base deployments
 # AWS Account ID and Region are dynamically replaced from Parameter Store
 # Use scripts/update-kustomization-from-parameter-store.sh to update this file
+# IMPORTANT: Keep placeholders in Git - CI/CD will replace them before deployment
 images:
   - name: auxiliary-service
-    newName: 575907498612.dkr.ecr.us-east-1.amazonaws.com/k-challenge-dev-auxiliary-service
+    newName: ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/k-challenge-dev-auxiliary-service
     newTag: latest
   - name: main-api
-    newName: 575907498612.dkr.ecr.us-east-1.amazonaws.com/k-challenge-dev-main-api
+    newName: ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/k-challenge-dev-main-api
     newTag: latest
 
 # Note: We don't use commonLabels here because it would modify
