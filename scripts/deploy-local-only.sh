@@ -256,43 +256,73 @@ echo ""
 # Step 7: Deploy Kubernetes manifests
 echo -e "${YELLOW}Step 7: Deploying Kubernetes manifests...${NC}"
 
-# Update kustomization.yaml from Parameter Store (replaces ${AWS_ACCOUNT_ID} and ${AWS_REGION})
-echo -e "${BLUE}Updating kustomization.yaml from Parameter Store...${NC}"
-if [ -f "$PROJECT_ROOT/scripts/update-kustomization-from-parameter-store.sh" ]; then
-    # Run from project root so the script can find the file
-    cd "$PROJECT_ROOT"
-    "$PROJECT_ROOT/scripts/update-kustomization-from-parameter-store.sh" || {
-        cd "$PROJECT_ROOT/kubernetes"
-        echo -e "${YELLOW}⚠️  Failed to update from Parameter Store, trying fallback...${NC}"
-        cd "$PROJECT_ROOT/kubernetes"
-        # Fallback: Replace placeholders directly if Parameter Store update fails
-        if grep -q '\${AWS_ACCOUNT_ID}\|\${AWS_REGION}' overlays/dev/kustomization.yaml; then
-            if [[ "$OSTYPE" == "darwin"* ]]; then
-                sed -i '' "s|\${AWS_ACCOUNT_ID}|$AWS_ACCOUNT_ID|g" overlays/dev/kustomization.yaml
-                sed -i '' "s|\${AWS_REGION}|$AWS_REGION|g" overlays/dev/kustomization.yaml
-            else
-                sed -i "s|\${AWS_ACCOUNT_ID}|$AWS_ACCOUNT_ID|g" overlays/dev/kustomization.yaml
-                sed -i "s|\${AWS_REGION}|$AWS_REGION|g" overlays/dev/kustomization.yaml
-            fi
-        fi
-    }
-    cd "$PROJECT_ROOT/kubernetes"
-else
-    echo -e "${YELLOW}⚠️  Update script not found, using fallback method...${NC}"
-    cd "$PROJECT_ROOT/kubernetes"
-    # Fallback: Replace placeholders directly
-    if grep -q '\${AWS_ACCOUNT_ID}\|\${AWS_REGION}' overlays/dev/kustomization.yaml; then
-        if [[ "$OSTYPE" == "darwin"* ]]; then
-            sed -i '' "s|\${AWS_ACCOUNT_ID}|$AWS_ACCOUNT_ID|g" overlays/dev/kustomization.yaml
-            sed -i '' "s|\${AWS_REGION}|$AWS_REGION|g" overlays/dev/kustomization.yaml
-        else
-            sed -i "s|\${AWS_ACCOUNT_ID}|$AWS_ACCOUNT_ID|g" overlays/dev/kustomization.yaml
-            sed -i "s|\${AWS_REGION}|$AWS_REGION|g" overlays/dev/kustomization.yaml
-        fi
+# Get AWS Account ID and Region (for substituting placeholders)
+cd "$PROJECT_ROOT/kubernetes"
+KUSTOMIZATION_FILE="overlays/dev/kustomization.yaml"
+TEMP_KUSTOMIZATION_FILE="overlays/dev/kustomization.yaml.tmp"
+
+# Get AWS Account ID and Region from Parameter Store or AWS CLI
+echo -e "${BLUE}Fetching AWS Account ID and Region...${NC}"
+if [ -z "$AWS_ACCOUNT_ID" ]; then
+    AWS_ACCOUNT_ID_PARAM="/k-challenge/aws/account-id"
+    AWS_ACCOUNT_ID=$(aws ssm get-parameter --name "$AWS_ACCOUNT_ID_PARAM" --query 'Parameter.Value' --output text 2>/dev/null || echo "")
+    if [ -z "$AWS_ACCOUNT_ID" ]; then
+        AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text 2>/dev/null || echo "")
     fi
 fi
 
-kubectl apply -k overlays/dev
+if [ -z "$AWS_REGION" ]; then
+    AWS_REGION_PARAM="/k-challenge/aws/region"
+    AWS_REGION=$(aws ssm get-parameter --name "$AWS_REGION_PARAM" --query 'Parameter.Value' --output text 2>/dev/null || echo "")
+    if [ -z "$AWS_REGION" ]; then
+        AWS_REGION=$(aws configure get region 2>/dev/null || echo "us-east-1")
+    fi
+fi
+
+if [ -z "$AWS_ACCOUNT_ID" ] || [ -z "$AWS_REGION" ]; then
+    echo -e "${RED}❌ Could not determine AWS Account ID or Region${NC}"
+    exit 1
+fi
+
+echo -e "${GREEN}✓ AWS Account ID: $AWS_ACCOUNT_ID${NC}"
+echo -e "${GREEN}✓ AWS Region: $AWS_REGION${NC}"
+
+# Create temporary kustomization file with substituted values (don't modify tracked file)
+echo -e "${BLUE}Creating temporary kustomization file with substituted values...${NC}"
+if [ -f "$KUSTOMIZATION_FILE" ]; then
+    # Use envsubst if available, otherwise use sed
+    if command -v envsubst &> /dev/null; then
+        export AWS_ACCOUNT_ID AWS_REGION
+        envsubst < "$KUSTOMIZATION_FILE" > "$TEMP_KUSTOMIZATION_FILE"
+    else
+        # Fallback to sed
+        cp "$KUSTOMIZATION_FILE" "$TEMP_KUSTOMIZATION_FILE"
+        if [[ "$OSTYPE" == "darwin"* ]]; then
+            sed -i '' "s|\${AWS_ACCOUNT_ID}|$AWS_ACCOUNT_ID|g" "$TEMP_KUSTOMIZATION_FILE"
+            sed -i '' "s|\${AWS_REGION}|$AWS_REGION|g" "$TEMP_KUSTOMIZATION_FILE"
+        else
+            sed -i "s|\${AWS_ACCOUNT_ID}|$AWS_ACCOUNT_ID|g" "$TEMP_KUSTOMIZATION_FILE"
+            sed -i "s|\${AWS_REGION}|$AWS_REGION|g" "$TEMP_KUSTOMIZATION_FILE"
+        fi
+    fi
+    
+    # Temporarily replace the original with the temp file for kubectl apply -k
+    mv "$KUSTOMIZATION_FILE" "${KUSTOMIZATION_FILE}.original"
+    mv "$TEMP_KUSTOMIZATION_FILE" "$KUSTOMIZATION_FILE"
+    
+    # Deploy using kustomize
+    kubectl apply -k overlays/dev
+    
+    # Restore original file immediately after deployment
+    mv "$KUSTOMIZATION_FILE" "$TEMP_KUSTOMIZATION_FILE"
+    mv "${KUSTOMIZATION_FILE}.original" "$KUSTOMIZATION_FILE"
+    rm -f "$TEMP_KUSTOMIZATION_FILE"
+    
+    echo -e "${GREEN}✓ Original kustomization.yaml restored (placeholders preserved)${NC}"
+else
+    echo -e "${RED}❌ Kustomization file not found: $KUSTOMIZATION_FILE${NC}"
+    exit 1
+fi
 echo -e "${GREEN}✓ Kubernetes manifests applied${NC}"
 echo ""
 
