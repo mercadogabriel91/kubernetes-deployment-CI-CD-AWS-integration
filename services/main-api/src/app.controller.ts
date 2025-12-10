@@ -1,28 +1,36 @@
-import { Controller, Get, Param, HttpException, HttpStatus } from '@nestjs/common';
-import { AuxiliaryService } from './auxiliary.service';
+import {
+  Controller,
+  Get,
+  Param,
+  Query,
+  HttpException,
+  HttpStatus,
+} from "@nestjs/common";
+import { AuxiliaryService } from "./auxiliary.service";
 
 @Controller()
 export class AppController {
   private readonly mainApiVersion: string;
 
   constructor(private readonly auxiliaryService: AuxiliaryService) {
-    this.mainApiVersion = process.env.VERSION || '1.0.0';
+    this.mainApiVersion = process.env.VERSION || "1.0.0";
   }
 
-  @Get('health')
+  @Get("health")
   health() {
     return {
-      status: 'healthy',
-      service: 'main-api',
+      status: "healthy",
+      service: "main-api",
       version: this.mainApiVersion,
     };
   }
 
-  @Get('buckets')
+  @Get("buckets")
   async listBuckets() {
     try {
       const buckets = await this.auxiliaryService.getBuckets();
-      const auxiliaryVersion = await this.auxiliaryService.getAuxiliaryVersion();
+      const auxiliaryVersion =
+        await this.auxiliaryService.getAuxiliaryVersion();
 
       return {
         buckets,
@@ -30,23 +38,66 @@ export class AppController {
         auxiliary_service_version: auxiliaryVersion,
       };
     } catch (error) {
-      const auxiliaryVersion = await this.auxiliaryService.getAuxiliaryVersion();
+      const auxiliaryVersion =
+        await this.auxiliaryService.getAuxiliaryVersion();
       throw new HttpException(
         {
           error: error.message,
           main_api_version: this.mainApiVersion,
           auxiliary_service_version: auxiliaryVersion,
         },
-        HttpStatus.INTERNAL_SERVER_ERROR,
+        HttpStatus.INTERNAL_SERVER_ERROR
       );
     }
   }
 
-  @Get('parameters')
-  async listParameters() {
+  @Get("parameters")
+  async getParameters(@Query("name") name?: string) {
+    // If name query parameter is provided, return single parameter
+    if (name) {
+      try {
+        const parameter = await this.auxiliaryService.getParameter(name);
+        const auxiliaryVersion =
+          await this.auxiliaryService.getAuxiliaryVersion();
+
+        return {
+          name: parameter.name,
+          value: parameter.value,
+          type: parameter.type,
+          main_api_version: this.mainApiVersion,
+          auxiliary_service_version: auxiliaryVersion,
+        };
+      } catch (error) {
+        const auxiliaryVersion =
+          await this.auxiliaryService.getAuxiliaryVersion();
+
+        if (error instanceof HttpException) {
+          throw new HttpException(
+            {
+              error: error.message,
+              main_api_version: this.mainApiVersion,
+              auxiliary_service_version: auxiliaryVersion,
+            },
+            error.getStatus()
+          );
+        }
+
+        throw new HttpException(
+          {
+            error: error.message,
+            main_api_version: this.mainApiVersion,
+            auxiliary_service_version: auxiliaryVersion,
+          },
+          HttpStatus.INTERNAL_SERVER_ERROR
+        );
+      }
+    }
+
+    // Otherwise, return all parameters
     try {
       const parameters = await this.auxiliaryService.getParameters();
-      const auxiliaryVersion = await this.auxiliaryService.getAuxiliaryVersion();
+      const auxiliaryVersion =
+        await this.auxiliaryService.getAuxiliaryVersion();
 
       return {
         parameters,
@@ -54,23 +105,26 @@ export class AppController {
         auxiliary_service_version: auxiliaryVersion,
       };
     } catch (error) {
-      const auxiliaryVersion = await this.auxiliaryService.getAuxiliaryVersion();
+      const auxiliaryVersion =
+        await this.auxiliaryService.getAuxiliaryVersion();
       throw new HttpException(
         {
           error: error.message,
           main_api_version: this.mainApiVersion,
           auxiliary_service_version: auxiliaryVersion,
         },
-        HttpStatus.INTERNAL_SERVER_ERROR,
+        HttpStatus.INTERNAL_SERVER_ERROR
       );
     }
   }
 
-  @Get('parameters/:name')
-  async getParameter(@Param('name') name: string) {
+  // Keep the path parameter route for backward compatibility
+  @Get("parameters/:name")
+  async getParameterByPath(@Param("name") name: string) {
     try {
       const parameter = await this.auxiliaryService.getParameter(name);
-      const auxiliaryVersion = await this.auxiliaryService.getAuxiliaryVersion();
+      const auxiliaryVersion =
+        await this.auxiliaryService.getAuxiliaryVersion();
 
       return {
         name: parameter.name,
@@ -80,8 +134,9 @@ export class AppController {
         auxiliary_service_version: auxiliaryVersion,
       };
     } catch (error) {
-      const auxiliaryVersion = await this.auxiliaryService.getAuxiliaryVersion();
-      
+      const auxiliaryVersion =
+        await this.auxiliaryService.getAuxiliaryVersion();
+
       if (error instanceof HttpException) {
         throw new HttpException(
           {
@@ -89,7 +144,7 @@ export class AppController {
             main_api_version: this.mainApiVersion,
             auxiliary_service_version: auxiliaryVersion,
           },
-          error.getStatus(),
+          error.getStatus()
         );
       }
 
@@ -99,9 +154,8 @@ export class AppController {
           main_api_version: this.mainApiVersion,
           auxiliary_service_version: auxiliaryVersion,
         },
-        HttpStatus.INTERNAL_SERVER_ERROR,
+        HttpStatus.INTERNAL_SERVER_ERROR
       );
     }
   }
 }
-

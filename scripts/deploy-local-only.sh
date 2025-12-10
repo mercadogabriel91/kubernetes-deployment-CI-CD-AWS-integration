@@ -48,12 +48,11 @@ if [ -z "$AWS_PROFILE" ] && [ -z "$AWS_ACCESS_KEY_ID" ]; then
     read -p "Enter AWS profile to use (or press Enter to use 'gabe-personal'): " AWS_PROFILE_INPUT
     if [ -n "$AWS_PROFILE_INPUT" ]; then
         export AWS_PROFILE="$AWS_PROFILE_INPUT"
+        echo -e "${BLUE}Using AWS profile: $AWS_PROFILE${NC}"
     else
         export AWS_PROFILE="gabe-personal" # You can change this to your preferred profile i use this in my pc to prevent deploying to the wrong account
         echo -e "${GREEN}✅ Using AWS_PROFILE: gabe-personal${NC}"
         echo -e "${BLUE}Using AWS profile: $AWS_PROFILE${NC}"
-    else
-        echo -e "${YELLOW}Using default AWS profile${NC}"
     fi
     echo ""
 fi
@@ -256,13 +255,16 @@ echo ""
 
 # Step 7: Deploy Kubernetes manifests
 echo -e "${YELLOW}Step 7: Deploying Kubernetes manifests...${NC}"
-cd "$PROJECT_ROOT/kubernetes"
 
 # Update kustomization.yaml from Parameter Store (replaces ${AWS_ACCOUNT_ID} and ${AWS_REGION})
 echo -e "${BLUE}Updating kustomization.yaml from Parameter Store...${NC}"
 if [ -f "$PROJECT_ROOT/scripts/update-kustomization-from-parameter-store.sh" ]; then
+    # Run from project root so the script can find the file
+    cd "$PROJECT_ROOT"
     "$PROJECT_ROOT/scripts/update-kustomization-from-parameter-store.sh" || {
+        cd "$PROJECT_ROOT/kubernetes"
         echo -e "${YELLOW}⚠️  Failed to update from Parameter Store, trying fallback...${NC}"
+        cd "$PROJECT_ROOT/kubernetes"
         # Fallback: Replace placeholders directly if Parameter Store update fails
         if grep -q '\${AWS_ACCOUNT_ID}\|\${AWS_REGION}' overlays/dev/kustomization.yaml; then
             if [[ "$OSTYPE" == "darwin"* ]]; then
@@ -274,8 +276,10 @@ if [ -f "$PROJECT_ROOT/scripts/update-kustomization-from-parameter-store.sh" ]; 
             fi
         fi
     }
+    cd "$PROJECT_ROOT/kubernetes"
 else
     echo -e "${YELLOW}⚠️  Update script not found, using fallback method...${NC}"
+    cd "$PROJECT_ROOT/kubernetes"
     # Fallback: Replace placeholders directly
     if grep -q '\${AWS_ACCOUNT_ID}\|\${AWS_REGION}' overlays/dev/kustomization.yaml; then
         if [[ "$OSTYPE" == "darwin"* ]]; then
