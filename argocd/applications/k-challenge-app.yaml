@@ -13,6 +13,8 @@ metadata:
     # Argo CD Image Updater: Enable automatic image updates
     argocd-image-updater.argoproj.io/write-back-method: git
     argocd-image-updater.argoproj.io/git-branch: main
+    # Git credentials secret (created separately)
+    argocd-image-updater.argoproj.io/git-repository: https://github.com/mercadogabriel91/kubernetes-deployment-CI-CD-AWS-integration.git
 spec:
   # Project: Controls which repos/namespaces this app can deploy to
   project: default

@@ -8,13 +8,15 @@ metadata:
     environment: dev
   annotations:
     # Argo CD Image Updater: Automatically updates image tags from ECR
-    # Reads registry from kustomization.yaml (no account ID hardcoded here)
-    argocd-image-updater.argoproj.io/image-list: auxiliary-service=ECR_REGISTRY/k-challenge-dev-auxiliary-service
+    # Registry URL is populated from Parameter Store via update script
+    # Format: image-name=registry/repository
+    argocd-image-updater.argoproj.io/image-list: auxiliary-service=${ECR_REGISTRY}/k-challenge-dev-auxiliary-service
     argocd-image-updater.argoproj.io/write-back-method: git
     argocd-image-updater.argoproj.io/git-branch: main
     argocd-image-updater.argoproj.io/kustomize-image-update: "true"
     argocd-image-updater.argoproj.io/kustomize-path: kubernetes/overlays/dev
     argocd-image-updater.argoproj.io/update-strategy: latest
+    argocd-image-updater.argoproj.io/write-back-target: kustomization
 spec:
   replicas: 2
   selector:
