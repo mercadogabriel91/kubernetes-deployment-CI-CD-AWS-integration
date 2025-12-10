@@ -16,6 +16,7 @@ data:
   git.user: "argocd-image-updater"
   git.email: "noreply@argocd-image-updater"
   log.level: info
+  # Git credentials will be provided via secret (see argocd-image-updater-secret)
 
 ---
 apiVersion: v1
@@ -26,7 +27,12 @@ metadata:
 type: Opaque
 stringData:
   # AWS credentials for ECR access
-  # These will be populated from AWS credentials
+  # Populate these with your AWS credentials for ECR access
   AWS_ACCESS_KEY_ID: ""
   AWS_SECRET_ACCESS_KEY: ""
+  # GitHub Personal Access Token for write-back to Git
+  # Create at: https://github.com/settings/tokens
+  # Required permissions: repo (full control of private repositories)
+  git.user: "argocd-image-updater"
+  git.password: ""  # GitHub Personal Access Token
 

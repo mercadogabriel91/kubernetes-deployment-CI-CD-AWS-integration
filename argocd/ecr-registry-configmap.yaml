@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ecr-registry-config
+  namespace: argocd
+  labels:
+    app: argocd-image-updater
+data:
+  # ECR Registry Configuration for Argo CD Image Updater
+  # These values are populated from AWS Parameter Store
+  # This ConfigMap is created/updated by a script that reads from Parameter Store
+  # DO NOT hardcode account IDs - use Parameter Store values
+  ECR_REGISTRY: "PLACEHOLDER_WILL_BE_REPLACED"
+  AWS_ACCOUNT_ID: "PLACEHOLDER_WILL_BE_REPLACED"
+  AWS_REGION: "PLACEHOLDER_WILL_BE_REPLACED"
+
