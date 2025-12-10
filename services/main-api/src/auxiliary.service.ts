@@ -58,10 +58,13 @@ export class AuxiliaryService {
     type: string;
   }> {
     try {
+      // Use query parameter to handle parameter names with slashes
       const response = await firstValueFrom(
-        this.httpService.get(
-          `${this.baseUrl}/aws/parameters/${encodeURIComponent(name)}`
-        )
+        this.httpService.get(`${this.baseUrl}/aws/parameters`, {
+          params: {
+            name: name,
+          },
+        })
       );
       return {
         name: response.data.name,

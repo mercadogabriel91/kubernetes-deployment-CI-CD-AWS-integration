@@ -5,7 +5,9 @@ output "parameter_paths" {
     aws_ssm_parameter.environment.name,
     aws_ssm_parameter.main_api_port.name,
     aws_ssm_parameter.auxiliary_service_port.name,
-    aws_ssm_parameter.auxiliary_service_url.name
+    aws_ssm_parameter.auxiliary_service_url.name,
+    aws_ssm_parameter.aws_account_id.name,
+    aws_ssm_parameter.aws_region.name
   ]
 }
 
@@ -17,5 +19,15 @@ output "parameter_store_arn" {
 output "app_version_parameter_name" {
   description = "Name of the app version parameter"
   value       = aws_ssm_parameter.app_version.name
+}
+
+output "aws_account_id_parameter_name" {
+  description = "Name of the AWS account ID parameter"
+  value       = aws_ssm_parameter.aws_account_id.name
+}
+
+output "aws_region_parameter_name" {
+  description = "Name of the AWS region parameter"
+  value       = aws_ssm_parameter.aws_region.name
 }
 

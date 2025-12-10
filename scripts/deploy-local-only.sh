@@ -38,17 +38,21 @@ command -v docker >/dev/null 2>&1 || { echo -e "${RED}Error: docker is not insta
 command -v aws >/dev/null 2>&1 || { echo -e "${RED}Error: aws cli is not installed${NC}"; exit 1; }
 
 # Check/prompt for AWS profile
+# DEFAULT: Use gabe-personal profile to avoid deploying to work account
 if [ -z "$AWS_PROFILE" ] && [ -z "$AWS_ACCESS_KEY_ID" ]; then
     echo -e "${YELLOW}AWS_PROFILE or AWS_ACCESS_KEY_ID not set${NC}"
+    echo -e "${BLUE}💡 Defaulting to 'gabe-personal' profile to avoid work account${NC}"
     echo "Available AWS profiles:"
     aws configure list-profiles 2>/dev/null || grep -E '^\[profile ' ~/.aws/config 2>/dev/null | sed 's/\[profile \(.*\)\]/\1/' || echo "  (none found)"
     echo ""
-    read -p "Enter AWS profile to use (or press Enter to use default): " AWS_PROFILE_INPUT
+    read -p "Enter AWS profile to use (or press Enter to use 'gabe-personal'): " AWS_PROFILE_INPUT
     if [ -n "$AWS_PROFILE_INPUT" ]; then
         export AWS_PROFILE="$AWS_PROFILE_INPUT"
         echo -e "${BLUE}Using AWS profile: $AWS_PROFILE${NC}"
     else
-        echo -e "${YELLOW}Using default AWS profile${NC}"
+        export AWS_PROFILE="gabe-personal" # You can change this to your preferred profile i use this in my pc to prevent deploying to the wrong account
+        echo -e "${GREEN}✅ Using AWS_PROFILE: gabe-personal${NC}"
+        echo -e "${BLUE}Using AWS profile: $AWS_PROFILE${NC}"
     fi
     echo ""
 fi
@@ -251,20 +255,74 @@ echo ""
 
 # Step 7: Deploy Kubernetes manifests
 echo -e "${YELLOW}Step 7: Deploying Kubernetes manifests...${NC}"
-cd "$PROJECT_ROOT/kubernetes"
 
-# Replace placeholder account ID in kustomization.yaml with actual account ID
-if grep -q "YOUR-AWS-ACCOUNT-ID" overlays/dev/kustomization.yaml; then
-    echo -e "${BLUE}Replacing placeholder account ID with actual account ID...${NC}"
-    # Use sed compatible with both macOS (BSD) and Linux (GNU)
-    if [[ "$OSTYPE" == "darwin"* ]]; then
-        sed -i '' "s/YOUR-AWS-ACCOUNT-ID/$AWS_ACCOUNT_ID/g" overlays/dev/kustomization.yaml
-    else
-        sed -i "s/YOUR-AWS-ACCOUNT-ID/$AWS_ACCOUNT_ID/g" overlays/dev/kustomization.yaml
+# Get AWS Account ID and Region (for substituting placeholders)
+cd "$PROJECT_ROOT/kubernetes"
+KUSTOMIZATION_FILE="overlays/dev/kustomization.yaml"
+TEMP_KUSTOMIZATION_FILE="overlays/dev/kustomization.yaml.tmp"
+
+# Get AWS Account ID and Region from Parameter Store or AWS CLI
+echo -e "${BLUE}Fetching AWS Account ID and Region...${NC}"
+if [ -z "$AWS_ACCOUNT_ID" ]; then
+    AWS_ACCOUNT_ID_PARAM="/k-challenge/aws/account-id"
+    AWS_ACCOUNT_ID=$(aws ssm get-parameter --name "$AWS_ACCOUNT_ID_PARAM" --query 'Parameter.Value' --output text 2>/dev/null || echo "")
+    if [ -z "$AWS_ACCOUNT_ID" ]; then
+        AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text 2>/dev/null || echo "")
     fi
 fi
 
-kubectl apply -k overlays/dev
+if [ -z "$AWS_REGION" ]; then
+    AWS_REGION_PARAM="/k-challenge/aws/region"
+    AWS_REGION=$(aws ssm get-parameter --name "$AWS_REGION_PARAM" --query 'Parameter.Value' --output text 2>/dev/null || echo "")
+    if [ -z "$AWS_REGION" ]; then
+        AWS_REGION=$(aws configure get region 2>/dev/null || echo "us-east-1")
+    fi
+fi
+
+if [ -z "$AWS_ACCOUNT_ID" ] || [ -z "$AWS_REGION" ]; then
+    echo -e "${RED}❌ Could not determine AWS Account ID or Region${NC}"
+    exit 1
+fi
+
+echo -e "${GREEN}✓ AWS Account ID: $AWS_ACCOUNT_ID${NC}"
+echo -e "${GREEN}✓ AWS Region: $AWS_REGION${NC}"
+
+# Create temporary kustomization file with substituted values (don't modify tracked file)
+echo -e "${BLUE}Creating temporary kustomization file with substituted values...${NC}"
+if [ -f "$KUSTOMIZATION_FILE" ]; then
+    # Use envsubst if available, otherwise use sed
+    if command -v envsubst &> /dev/null; then
+        export AWS_ACCOUNT_ID AWS_REGION
+        envsubst < "$KUSTOMIZATION_FILE" > "$TEMP_KUSTOMIZATION_FILE"
+    else
+        # Fallback to sed
+        cp "$KUSTOMIZATION_FILE" "$TEMP_KUSTOMIZATION_FILE"
+        if [[ "$OSTYPE" == "darwin"* ]]; then
+            sed -i '' "s|\${AWS_ACCOUNT_ID}|$AWS_ACCOUNT_ID|g" "$TEMP_KUSTOMIZATION_FILE"
+            sed -i '' "s|\${AWS_REGION}|$AWS_REGION|g" "$TEMP_KUSTOMIZATION_FILE"
+        else
+            sed -i "s|\${AWS_ACCOUNT_ID}|$AWS_ACCOUNT_ID|g" "$TEMP_KUSTOMIZATION_FILE"
+            sed -i "s|\${AWS_REGION}|$AWS_REGION|g" "$TEMP_KUSTOMIZATION_FILE"
+        fi
+    fi
+    
+    # Temporarily replace the original with the temp file for kubectl apply -k
+    mv "$KUSTOMIZATION_FILE" "${KUSTOMIZATION_FILE}.original"
+    mv "$TEMP_KUSTOMIZATION_FILE" "$KUSTOMIZATION_FILE"
+    
+    # Deploy using kustomize
+    kubectl apply -k overlays/dev
+    
+    # Restore original file immediately after deployment
+    mv "$KUSTOMIZATION_FILE" "$TEMP_KUSTOMIZATION_FILE"
+    mv "${KUSTOMIZATION_FILE}.original" "$KUSTOMIZATION_FILE"
+    rm -f "$TEMP_KUSTOMIZATION_FILE"
+    
+    echo -e "${GREEN}✓ Original kustomization.yaml restored (placeholders preserved)${NC}"
+else
+    echo -e "${RED}❌ Kustomization file not found: $KUSTOMIZATION_FILE${NC}"
+    exit 1
+fi
 echo -e "${GREEN}✓ Kubernetes manifests applied${NC}"
 echo ""
 

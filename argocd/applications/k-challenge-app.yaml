@@ -1,0 +1,95 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: k-challenge-app
+  namespace: argocd
+  # Finalizers ensure proper cleanup
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+  labels:
+    app: k-challenge
+    environment: dev
+  annotations:
+    # Argo CD Image Updater: Enable automatic image updates
+    argocd-image-updater.argoproj.io/write-back-method: git
+    argocd-image-updater.argoproj.io/git-branch: main
+spec:
+  # Project: Controls which repos/namespaces this app can deploy to
+  project: default
+  
+  # Source: Git repository containing Kubernetes manifests
+  source:
+    repoURL: https://github.com/mercadogabriel91/kubernetes-deployment-CI-CD-AWS-integration.git
+    # BEST PRACTICE: Only sync from main branch (after PR merge)
+    # This ensures:
+    # - Code has been reviewed and tested
+    # - CI/CD pipeline has passed
+    # - No accidental deployments from feature branches
+    targetRevision: main  # Branch name - only syncs on merges to main
+    path: kubernetes/overlays/dev  # Path to Kustomize overlay
+    # Argo CD supports Kustomize natively - no additional config needed
+  
+  # Destination: Where to deploy
+  destination:
+    server: https://kubernetes.default.svc  # Current cluster
+    namespace: k-challenge-namespace  # Target namespace
+  
+  # Sync Policy: How Argo CD syncs changes
+  syncPolicy:
+    # Automated sync: Argo CD will automatically sync when Git changes
+    automated:
+      prune: true      # Delete resources that are removed from Git
+      selfHeal: true   # Auto-sync if cluster state drifts from Git
+      allowEmpty: false  # Don't sync if no resources found
+    
+    # Sync options
+    syncOptions:
+      - CreateNamespace=true  # Create namespace if it doesn't exist
+      - PruneLast=true        # Prune resources after sync (cleanup)
+      - ApplyOutOfSyncOnly=true  # Only apply resources that are out of sync
+    
+    # Retry configuration
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
+
+---
+# AppProject: Defines what repos and namespaces this project can access
+# (Optional - uses default project if not specified)
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: k-challenge-project
+  namespace: argocd
+spec:
+  description: Project for K-Challenge application
+  
+  # Source repositories allowed
+  sourceRepos:
+    - 'https://github.com/mercadogabriel91/kubernetes-deployment-CI-CD-AWS-integration.git'
+    - '*'  # Allow any repo (for flexibility)
+  
+  # Destinations: Where apps can deploy
+  destinations:
+    - namespace: k-challenge-namespace
+      server: https://kubernetes.default.svc
+    - namespace: '*'
+      server: https://kubernetes.default.svc
+  
+  # Cluster resource whitelist
+  clusterResourceWhitelist:
+    - group: ''
+      kind: Namespace
+    - group: 'rbac.authorization.k8s.io'
+      kind: ClusterRole
+    - group: 'rbac.authorization.k8s.io'
+      kind: ClusterRoleBinding
+  
+  # Namespace resource whitelist (allow all)
+  namespaceResourceWhitelist:
+    - group: '*'
+      kind: '*'
+

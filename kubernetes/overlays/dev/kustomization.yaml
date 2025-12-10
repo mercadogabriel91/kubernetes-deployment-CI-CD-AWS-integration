@@ -8,9 +8,9 @@ resources:
   - ../../base
 
 # Image replacements - these override the placeholder images in base deployments
-# AWS Account ID and Region are dynamically replaced from Parameter Store
-# Use scripts/update-kustomization-from-parameter-store.sh to update this file
-# IMPORTANT: Keep placeholders in Git - CI/CD will replace them before deployment
+# AWS Account ID and Region are dynamically replaced at deployment time
+# IMPORTANT: Keep placeholders in Git - deployment scripts will replace them temporarily
+# Argo CD Image Updater will update image tags automatically
 images:
   - name: auxiliary-service
     newName: ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/k-challenge-dev-auxiliary-service

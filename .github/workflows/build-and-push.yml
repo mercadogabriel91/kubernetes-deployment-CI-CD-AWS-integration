@@ -1,0 +1,84 @@
+name: Build and Push Docker Images
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch: # Allow manual trigger
+
+env:
+  AWS_REGION: us-east-1
+
+jobs:
+  build-and-push:
+    name: Build and Push Images
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write # Required for OIDC
+      contents: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          # Get role ARN from GitHub secret (set from terraform output)
+          # Run: terraform output -raw github_actions_role_arn
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Get AWS Account ID
+        id: aws-account
+        run: |
+          ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+          echo "account_id=$ACCOUNT_ID" >> $GITHUB_OUTPUT
+          echo "AWS Account ID: $ACCOUNT_ID"
+
+      - name: Get ECR repository URLs from Parameter Store
+        id: ecr-urls
+        run: |
+          AUXILIARY_URL=$(aws ssm get-parameter --name "/k-challenge/aws/account-id" --query "Parameter.Value" --output text).dkr.ecr.$(aws ssm get-parameter --name "/k-challenge/aws/region" --query "Parameter.Value" --output text).amazonaws.com/k-challenge-dev-auxiliary-service
+          MAIN_API_URL=$(aws ssm get-parameter --name "/k-challenge/aws/account-id" --query "Parameter.Value" --output text).dkr.ecr.$(aws ssm get-parameter --name "/k-challenge/aws/region" --query "Parameter.Value" --output text).amazonaws.com/k-challenge-dev-main-api
+          echo "auxiliary_url=$AUXILIARY_URL" >> $GITHUB_OUTPUT
+          echo "main_api_url=$MAIN_API_URL" >> $GITHUB_OUTPUT
+          echo "Auxiliary Service ECR: $AUXILIARY_URL"
+          echo "Main API ECR: $MAIN_API_URL"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build and push Auxiliary Service
+        uses: docker/build-push-action@v5
+        with:
+          context: ./services/auxiliary-service
+          push: true
+          tags: |
+            ${{ steps.ecr-urls.outputs.auxiliary_url }}:latest
+            ${{ steps.ecr-urls.outputs.auxiliary_url }}:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build and push Main API
+        uses: docker/build-push-action@v5
+        with:
+          context: ./services/main-api
+          push: true
+          tags: |
+            ${{ steps.ecr-urls.outputs.main_api_url }}:latest
+            ${{ steps.ecr-urls.outputs.main_api_url }}:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Output image URLs
+        run: |
+          echo "✅ Images pushed successfully!"
+          echo "Auxiliary Service: ${{ steps.ecr-urls.outputs.auxiliary_url }}:${{ github.sha }}"
+          echo "Main API: ${{ steps.ecr-urls.outputs.main_api_url }}:${{ github.sha }}"
+          echo ""
+          echo "Argo CD Image Updater will detect these new images and update kustomization.yaml"

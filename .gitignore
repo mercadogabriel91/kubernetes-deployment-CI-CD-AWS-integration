@@ -23,6 +23,7 @@ Thumbs.db
 # Local folders
 challenge/
 md-galore/
+/scripts/update-kustomization-from-parameter-store.sh
 
 # Terraform
 *.tfstate
@@ -42,3 +43,10 @@ override.tf.json
 kubernetes/**/aws-credentials-secret.yaml
 kubernetes/**/*-secret.yaml
 !kubernetes/**/*-secret.yaml.example
+
+# Kustomization backup files and temporary files (created by deployment scripts)
+kubernetes/**/*.backup.*
+kubernetes/**/kustomization.yaml''
+kubernetes/**/kustomization.yaml.bak
+kubernetes/**/kustomization.yaml.tmp
+kubernetes/**/kustomization.yaml.original
