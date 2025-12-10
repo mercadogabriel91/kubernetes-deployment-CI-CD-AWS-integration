@@ -29,20 +29,24 @@ jobs:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: Get AWS Account ID
-        id: aws-account
-        run: |
-          ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
-          echo "account_id=$ACCOUNT_ID" >> $GITHUB_OUTPUT
-          echo "AWS Account ID: $ACCOUNT_ID"
-
-      - name: Get ECR repository URLs from Parameter Store
+      - name: Get AWS Account ID and Build ECR URLs
         id: ecr-urls
         run: |
-          AUXILIARY_URL=$(aws ssm get-parameter --name "/k-challenge/aws/account-id" --query "Parameter.Value" --output text).dkr.ecr.$(aws ssm get-parameter --name "/k-challenge/aws/region" --query "Parameter.Value" --output text).amazonaws.com/k-challenge-dev-auxiliary-service
-          MAIN_API_URL=$(aws ssm get-parameter --name "/k-challenge/aws/account-id" --query "Parameter.Value" --output text).dkr.ecr.$(aws ssm get-parameter --name "/k-challenge/aws/region" --query "Parameter.Value" --output text).amazonaws.com/k-challenge-dev-main-api
+          # Get AWS Account ID directly from AWS CLI (no Parameter Store needed)
+          ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+          AWS_REGION=${AWS_REGION:-us-east-1}
+          
+          # Build ECR repository URLs
+          AUXILIARY_URL="${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/k-challenge-dev-auxiliary-service"
+          MAIN_API_URL="${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/k-challenge-dev-main-api"
+          
+          echo "account_id=$ACCOUNT_ID" >> $GITHUB_OUTPUT
+          echo "aws_region=$AWS_REGION" >> $GITHUB_OUTPUT
           echo "auxiliary_url=$AUXILIARY_URL" >> $GITHUB_OUTPUT
           echo "main_api_url=$MAIN_API_URL" >> $GITHUB_OUTPUT
+          
+          echo "AWS Account ID: $ACCOUNT_ID"
+          echo "AWS Region: $AWS_REGION"
           echo "Auxiliary Service ECR: $AUXILIARY_URL"
           echo "Main API ECR: $MAIN_API_URL"
 
