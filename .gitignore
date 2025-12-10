@@ -23,6 +23,7 @@ Thumbs.db
 # Local folders
 challenge/
 md-galore/
+/scripts/update-kustomization-from-parameter-store.sh
 
 # Terraform
 *.tfstate

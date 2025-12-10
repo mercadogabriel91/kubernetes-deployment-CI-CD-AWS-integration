@@ -58,3 +58,34 @@ resource "aws_ssm_parameter" "auxiliary_service_url" {
   }
 }
 
+# AWS Account ID - stored in Parameter Store for use in Kubernetes manifests
+# This avoids hardcoding account IDs in Git
+data "aws_caller_identity" "current" {}
+
+resource "aws_ssm_parameter" "aws_account_id" {
+  name  = "/${var.project_name}/aws/account-id"
+  type  = "String"
+  value = data.aws_caller_identity.current.account_id
+
+  tags = {
+    Name        = "${var.project_name}-aws-account-id"
+    Environment = var.environment
+    Purpose     = "AWS Account ID for ECR registry URLs"
+  }
+}
+
+# AWS Region - stored for consistency
+data "aws_region" "current" {}
+
+resource "aws_ssm_parameter" "aws_region" {
+  name  = "/${var.project_name}/aws/region"
+  type  = "String"
+  value = data.aws_region.current.name
+
+  tags = {
+    Name        = "${var.project_name}-aws-region"
+    Environment = var.environment
+    Purpose     = "AWS Region for ECR registry URLs"
+  }
+}
+

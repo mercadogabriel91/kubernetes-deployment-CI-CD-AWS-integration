@@ -40,14 +40,19 @@ command -v docker >/dev/null 2>&1 || { echo -e "${RED}Error: docker is not insta
 command -v aws >/dev/null 2>&1 || { echo -e "${RED}Error: aws cli is not installed${NC}"; exit 1; }
 
 # Check/prompt for AWS profile
+# DEFAULT: Use gabe-personal profile to avoid deploying to work account
 if [ -z "$AWS_PROFILE" ] && [ -z "$AWS_ACCESS_KEY_ID" ]; then
     echo -e "${YELLOW}AWS_PROFILE or AWS_ACCESS_KEY_ID not set${NC}"
+    echo -e "${BLUE}💡 Defaulting to 'gabe-personal' profile to avoid work account${NC}"
     echo "Available AWS profiles:"
     aws configure list-profiles 2>/dev/null || grep -E '^\[profile ' ~/.aws/config 2>/dev/null | sed 's/\[profile \(.*\)\]/\1/' || echo "  (none found)"
     echo ""
-    read -p "Enter AWS profile to use (or press Enter to use default): " AWS_PROFILE_INPUT
+    read -p "Enter AWS profile to use (or press Enter to use 'gabe-personal'): " AWS_PROFILE_INPUT
     if [ -n "$AWS_PROFILE_INPUT" ]; then
         export AWS_PROFILE="$AWS_PROFILE_INPUT"
+    else
+        export AWS_PROFILE="gabe-personal" # You can change this to your preferred profile i use this in my pc to prevent deploying to the wrong account
+        echo -e "${GREEN}✅ Using AWS_PROFILE: gabe-personal${NC}"
         echo -e "${BLUE}Using AWS profile: $AWS_PROFILE${NC}"
     else
         echo -e "${YELLOW}Using default AWS profile${NC}"
@@ -253,14 +258,33 @@ echo ""
 echo -e "${YELLOW}Step 7: Deploying Kubernetes manifests...${NC}"
 cd "$PROJECT_ROOT/kubernetes"
 
-# Replace placeholder account ID in kustomization.yaml with actual account ID
-if grep -q "YOUR-AWS-ACCOUNT-ID" overlays/dev/kustomization.yaml; then
-    echo -e "${BLUE}Replacing placeholder account ID with actual account ID...${NC}"
-    # Use sed compatible with both macOS (BSD) and Linux (GNU)
-    if [[ "$OSTYPE" == "darwin"* ]]; then
-        sed -i '' "s/YOUR-AWS-ACCOUNT-ID/$AWS_ACCOUNT_ID/g" overlays/dev/kustomization.yaml
-    else
-        sed -i "s/YOUR-AWS-ACCOUNT-ID/$AWS_ACCOUNT_ID/g" overlays/dev/kustomization.yaml
+# Update kustomization.yaml from Parameter Store (replaces ${AWS_ACCOUNT_ID} and ${AWS_REGION})
+echo -e "${BLUE}Updating kustomization.yaml from Parameter Store...${NC}"
+if [ -f "$PROJECT_ROOT/scripts/update-kustomization-from-parameter-store.sh" ]; then
+    "$PROJECT_ROOT/scripts/update-kustomization-from-parameter-store.sh" || {
+        echo -e "${YELLOW}⚠️  Failed to update from Parameter Store, trying fallback...${NC}"
+        # Fallback: Replace placeholders directly if Parameter Store update fails
+        if grep -q '\${AWS_ACCOUNT_ID}\|\${AWS_REGION}' overlays/dev/kustomization.yaml; then
+            if [[ "$OSTYPE" == "darwin"* ]]; then
+                sed -i '' "s|\${AWS_ACCOUNT_ID}|$AWS_ACCOUNT_ID|g" overlays/dev/kustomization.yaml
+                sed -i '' "s|\${AWS_REGION}|$AWS_REGION|g" overlays/dev/kustomization.yaml
+            else
+                sed -i "s|\${AWS_ACCOUNT_ID}|$AWS_ACCOUNT_ID|g" overlays/dev/kustomization.yaml
+                sed -i "s|\${AWS_REGION}|$AWS_REGION|g" overlays/dev/kustomization.yaml
+            fi
+        fi
+    }
+else
+    echo -e "${YELLOW}⚠️  Update script not found, using fallback method...${NC}"
+    # Fallback: Replace placeholders directly
+    if grep -q '\${AWS_ACCOUNT_ID}\|\${AWS_REGION}' overlays/dev/kustomization.yaml; then
+        if [[ "$OSTYPE" == "darwin"* ]]; then
+            sed -i '' "s|\${AWS_ACCOUNT_ID}|$AWS_ACCOUNT_ID|g" overlays/dev/kustomization.yaml
+            sed -i '' "s|\${AWS_REGION}|$AWS_REGION|g" overlays/dev/kustomization.yaml
+        else
+            sed -i "s|\${AWS_ACCOUNT_ID}|$AWS_ACCOUNT_ID|g" overlays/dev/kustomization.yaml
+            sed -i "s|\${AWS_REGION}|$AWS_REGION|g" overlays/dev/kustomization.yaml
+        fi
     fi
 fi
 
