@@ -11,14 +11,23 @@ metadata:
     environment: dev
   annotations:
     # Argo CD Image Updater: Enable automatic image updates
+    # Image list: Specify which images to track (registry URL injected by GitHub Action)
+    # Format: image-alias=registry/repository
+    # The registry URL is dynamically injected from Parameter Store via GitHub Action
+    argocd-image-updater.argoproj.io/image-list: auxiliary-service=${ECR_REGISTRY}/k-challenge-dev-auxiliary-service,main-api=${ECR_REGISTRY}/k-challenge-dev-main-api
     argocd-image-updater.argoproj.io/write-back-method: git
     argocd-image-updater.argoproj.io/git-branch: main
     # Git credentials secret (created separately)
     argocd-image-updater.argoproj.io/git-repository: https://github.com/mercadogabriel91/kubernetes-deployment-CI-CD-AWS-integration.git
+    # Kustomize-specific settings
+    argocd-image-updater.argoproj.io/kustomize-image-update: "true"
+    argocd-image-updater.argoproj.io/kustomize-path: kubernetes/overlays/dev
+    argocd-image-updater.argoproj.io/update-strategy: latest
+    argocd-image-updater.argoproj.io/write-back-target: kustomization
 spec:
   # Project: Controls which repos/namespaces this app can deploy to
   project: default
-  
+
   # Source: Git repository containing Kubernetes manifests
   source:
     repoURL: https://github.com/mercadogabriel91/kubernetes-deployment-CI-CD-AWS-integration.git
@@ -27,29 +36,29 @@ spec:
     # - Code has been reviewed and tested
     # - CI/CD pipeline has passed
     # - No accidental deployments from feature branches
-    targetRevision: main  # Branch name - only syncs on merges to main
-    path: kubernetes/overlays/dev  # Path to Kustomize overlay
+    targetRevision: main # Branch name - only syncs on merges to main
+    path: kubernetes/overlays/dev # Path to Kustomize overlay
     # Argo CD supports Kustomize natively - no additional config needed
-  
+
   # Destination: Where to deploy
   destination:
-    server: https://kubernetes.default.svc  # Current cluster
-    namespace: k-challenge-namespace  # Target namespace
-  
+    server: https://kubernetes.default.svc # Current cluster
+    namespace: k-challenge-namespace # Target namespace
+
   # Sync Policy: How Argo CD syncs changes
   syncPolicy:
     # Automated sync: Argo CD will automatically sync when Git changes
     automated:
-      prune: true      # Delete resources that are removed from Git
-      selfHeal: true   # Auto-sync if cluster state drifts from Git
-      allowEmpty: false  # Don't sync if no resources found
-    
+      prune: true # Delete resources that are removed from Git
+      selfHeal: true # Auto-sync if cluster state drifts from Git
+      allowEmpty: false # Don't sync if no resources found
+
     # Sync options
     syncOptions:
-      - CreateNamespace=true  # Create namespace if it doesn't exist
-      - PruneLast=true        # Prune resources after sync (cleanup)
-      - ApplyOutOfSyncOnly=true  # Only apply resources that are out of sync
-    
+      - CreateNamespace=true # Create namespace if it doesn't exist
+      - PruneLast=true # Prune resources after sync (cleanup)
+      - ApplyOutOfSyncOnly=true # Only apply resources that are out of sync
+
     # Retry configuration
     retry:
       limit: 5
@@ -68,30 +77,29 @@ metadata:
   namespace: argocd
 spec:
   description: Project for K-Challenge application
-  
+
   # Source repositories allowed
   sourceRepos:
-    - 'https://github.com/mercadogabriel91/kubernetes-deployment-CI-CD-AWS-integration.git'
-    - '*'  # Allow any repo (for flexibility)
-  
+    - "https://github.com/mercadogabriel91/kubernetes-deployment-CI-CD-AWS-integration.git"
+    - "*" # Allow any repo (for flexibility)
+
   # Destinations: Where apps can deploy
   destinations:
     - namespace: k-challenge-namespace
       server: https://kubernetes.default.svc
-    - namespace: '*'
+    - namespace: "*"
       server: https://kubernetes.default.svc
-  
+
   # Cluster resource whitelist
   clusterResourceWhitelist:
-    - group: ''
+    - group: ""
       kind: Namespace
-    - group: 'rbac.authorization.k8s.io'
+    - group: "rbac.authorization.k8s.io"
       kind: ClusterRole
-    - group: 'rbac.authorization.k8s.io'
+    - group: "rbac.authorization.k8s.io"
       kind: ClusterRoleBinding
-  
+
   # Namespace resource whitelist (allow all)
   namespaceResourceWhitelist:
-    - group: '*'
-      kind: '*'
-
+    - group: "*"
+      kind: "*"

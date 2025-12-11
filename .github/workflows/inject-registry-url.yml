@@ -28,7 +28,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          fetch-depth: 0  # Fetch full history to detect changes properly
+          fetch-depth: 0 # Fetch full history to detect changes properly
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -68,6 +68,10 @@ jobs:
           # Replace ${ECR_REGISTRY} in main-api deployment
           sed -i "s|\${ECR_REGISTRY}|${REGISTRY}|g" \
             kubernetes/base/main-api/main-api-deployment.yaml
+
+          # Replace ${ECR_REGISTRY} in Argo CD Application (Image Updater reads from Application annotations)
+          sed -i "s|\${ECR_REGISTRY}|${REGISTRY}|g" \
+            argocd/applications/k-challenge-app.yaml
 
           echo "✅ Placeholders replaced with: $REGISTRY"
 
