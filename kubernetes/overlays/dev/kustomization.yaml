@@ -19,7 +19,18 @@ images:
     newName: ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/k-challenge-dev-main-api
     newTag: latest
 
+# NOTE: The ${ECR_REGISTRY} placeholders in deployment annotations are replaced
+# by GitHub Actions workflow (.github/workflows/inject-registry-url.yml) which
+# reads from Parameter Store and commits the values. This ensures Image Updater
+# can read the registry URL from Git while keeping placeholders in source code.
+
 # Note: We don't use commonLabels here because it would modify
 # Deployment selectors (which are immutable). Labels are defined
 # directly in the deployment files.
+#
+# IMPORTANT: 
+# - Deployment annotations use ${ECR_REGISTRY} placeholder (no hardcoded values in Git)
+# - Kustomize replacements inject values from External Secrets Operator Secret at build time
+# - External Secrets Operator syncs from AWS Parameter Store using IRSA
+# - This ensures secure, dynamic registry URLs without hardcoding account IDs
 

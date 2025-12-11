@@ -8,6 +8,11 @@ output "kubernetes_service_account_role_arn" {
   value       = var.eks_cluster_name != "" && var.eks_oidc_provider_id != "" ? aws_iam_role.kubernetes_service_account[0].arn : ""
 }
 
+output "argocd_image_updater_role_arn" {
+  description = "ARN of the IAM role for Argo CD Image Updater"
+  value       = var.eks_cluster_name != "" && var.eks_oidc_provider_id != "" ? aws_iam_role.argocd_image_updater[0].arn : ""
+}
+
 output "oidc_provider_arn" {
   description = "ARN of OIDC provider for GitHub Actions"
   value       = var.github_repository != "" ? aws_iam_openid_connect_provider.github[0].arn : ""

@@ -8,9 +8,9 @@ metadata:
     environment: dev
   annotations:
     # Argo CD Image Updater: Automatically updates image tags from ECR
-    # Registry URL is populated from Parameter Store via update script
+    # Registry URL is injected via Kustomize replacements from External Secrets Operator Secret
     # Format: image-name=registry/repository
-    # This placeholder will be replaced by scripts/update-image-updater-annotations.sh
+    # Placeholder will be replaced by Kustomize at build time (no hardcoded values in Git)
     argocd-image-updater.argoproj.io/image-list: main-api=${ECR_REGISTRY}/k-challenge-dev-main-api
     argocd-image-updater.argoproj.io/write-back-method: git
     argocd-image-updater.argoproj.io/git-branch: main
