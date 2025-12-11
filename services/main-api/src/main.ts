@@ -7,6 +7,8 @@ async function bootstrap() {
   // Enable CORS
   app.enableCors();
   
+  // CI/CD test - verifying automated build and deployment
+  
   // Get port from environment variable (default: 3000)
   const portEnv = process.env.MAIN_API_PORT || process.env.PORT || '3000';
   const port = parseInt(portEnv, 10);
