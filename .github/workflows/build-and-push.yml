@@ -21,11 +21,13 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       id-token: write # Required for OIDC
-      contents: read
+      contents: write # Required to commit kustomization.yaml changes
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -85,10 +87,27 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - name: Output image URLs
+      - name: Update kustomization.yaml with new image tags
         run: |
-          echo "✅ Images pushed successfully!"
-          echo "Auxiliary Service: ${{ steps.ecr-urls.outputs.auxiliary_url }}:${{ github.sha }}"
-          echo "Main API: ${{ steps.ecr-urls.outputs.main_api_url }}:${{ github.sha }}"
-          echo ""
-          echo "Argo CD Image Updater will detect these new images and update kustomization.yaml"
+          COMMIT_SHA="${{ github.sha }}"
+          
+          # Update image tags in kustomization.yaml (registry URLs are already hardcoded)
+          sed -i "s|newTag: latest|newTag: ${COMMIT_SHA}|g" kubernetes/overlays/dev/kustomization.yaml
+          
+          echo "✅ Updated kustomization.yaml with new image tags: ${COMMIT_SHA}"
+          echo "  - Auxiliary Service: ${{ steps.ecr-urls.outputs.auxiliary_url }}:${COMMIT_SHA}"
+          echo "  - Main API: ${{ steps.ecr-urls.outputs.main_api_url }}:${COMMIT_SHA}"
+
+      - name: Commit and push changes
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add kubernetes/overlays/dev/kustomization.yaml
+
+          if [ -n "$(git status --porcelain)" ]; then
+            git commit -m "chore: update image tags to ${{ github.sha }} [skip ci]"
+            git push
+            echo "✅ Pushed updated kustomization.yaml - Argo CD will auto-sync"
+          else
+            echo "ℹ️  No changes to commit"
+          fi

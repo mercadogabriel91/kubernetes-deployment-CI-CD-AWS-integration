@@ -6,18 +6,6 @@ metadata:
   labels:
     app: main-api
     environment: dev
-  annotations:
-    # Argo CD Image Updater: Automatically updates image tags from ECR
-    # Registry URL is injected via Kustomize replacements from External Secrets Operator Secret
-    # Format: image-name=registry/repository
-    # Placeholder will be replaced by Kustomize at build time (no hardcoded values in Git)
-    argocd-image-updater.argoproj.io/image-list: main-api=575907498612.dkr.ecr.us-east-1.amazonaws.com/k-challenge-dev-main-api
-    argocd-image-updater.argoproj.io/write-back-method: git
-    argocd-image-updater.argoproj.io/git-branch: main
-    argocd-image-updater.argoproj.io/kustomize-image-update: "true"
-    argocd-image-updater.argoproj.io/kustomize-path: kubernetes/overlays/dev
-    argocd-image-updater.argoproj.io/update-strategy: latest
-    argocd-image-updater.argoproj.io/write-back-target: kustomization
 spec:
   replicas: 2
   selector:
@@ -31,51 +19,50 @@ spec:
     spec:
       serviceAccountName: k-challenge-app-sa
       imagePullSecrets:
-      - name: ecr-registry-secret
+        - name: ecr-registry-secret
       containers:
-      - name: main-api
-        image: main-api:latest
-        imagePullPolicy: Always
-        ports:
-        - containerPort: 3000
-          name: http
-        env:
-        - name: PORT
-          valueFrom:
-            configMapKeyRef:
-              name: k-challenge-config
-              key: MAIN_API_PORT
-        - name: VERSION
-          valueFrom:
-            configMapKeyRef:
-              name: k-challenge-config
-              key: VERSION
-        - name: AUXILIARY_SERVICE_URL
-          valueFrom:
-            configMapKeyRef:
-              name: k-challenge-config
-              key: AUXILIARY_SERVICE_URL
-        livenessProbe:
-          httpGet:
-            path: /health
-            port: 3000
-          initialDelaySeconds: 30
-          periodSeconds: 10
-          timeoutSeconds: 5
-          failureThreshold: 3
-        readinessProbe:
-          httpGet:
-            path: /health
-            port: 3000
-          initialDelaySeconds: 10
-          periodSeconds: 5
-          timeoutSeconds: 3
-          failureThreshold: 3
-        resources:
-          requests:
-            memory: "128Mi"
-            cpu: "100m"
-          limits:
-            memory: "256Mi"
-            cpu: "500m"
-
+        - name: main-api
+          image: main-api:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 3000
+              name: http
+          env:
+            - name: PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: k-challenge-config
+                  key: MAIN_API_PORT
+            - name: VERSION
+              valueFrom:
+                configMapKeyRef:
+                  name: k-challenge-config
+                  key: VERSION
+            - name: AUXILIARY_SERVICE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: k-challenge-config
+                  key: AUXILIARY_SERVICE_URL
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 3000
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 3000
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "256Mi"
+              cpu: "500m"

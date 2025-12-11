@@ -9,21 +9,6 @@ metadata:
   labels:
     app: k-challenge
     environment: dev
-  annotations:
-    # Argo CD Image Updater: Enable automatic image updates
-    # Image list: Specify which images to track (registry URL injected by GitHub Action)
-    # Format: image-alias=registry/repository
-    # The registry URL is dynamically injected from Parameter Store via GitHub Action
-    argocd-image-updater.argoproj.io/image-list: auxiliary-service=575907498612.dkr.ecr.us-east-1.amazonaws.com/k-challenge-dev-auxiliary-service,main-api=575907498612.dkr.ecr.us-east-1.amazonaws.com/k-challenge-dev-main-api
-    argocd-image-updater.argoproj.io/write-back-method: git
-    argocd-image-updater.argoproj.io/git-branch: main
-    # Git credentials secret (created separately)
-    argocd-image-updater.argoproj.io/git-repository: https://github.com/mercadogabriel91/kubernetes-deployment-CI-CD-AWS-integration.git
-    # Kustomize-specific settings
-    argocd-image-updater.argoproj.io/kustomize-image-update: "true"
-    argocd-image-updater.argoproj.io/kustomize-path: kubernetes/overlays/dev
-    argocd-image-updater.argoproj.io/update-strategy: latest
-    argocd-image-updater.argoproj.io/write-back-target: kustomization
 spec:
   # Project: Controls which repos/namespaces this app can deploy to
   project: default

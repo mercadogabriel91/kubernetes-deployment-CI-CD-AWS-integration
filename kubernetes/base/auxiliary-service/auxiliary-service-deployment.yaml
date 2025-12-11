@@ -6,18 +6,6 @@ metadata:
   labels:
     app: auxiliary-service
     environment: dev
-  annotations:
-    # Argo CD Image Updater: Automatically updates image tags from ECR
-    # Registry URL is injected via Kustomize replacements from External Secrets Operator Secret
-    # Format: image-name=registry/repository
-    # Placeholder will be replaced by Kustomize at build time (no hardcoded values in Git)
-    argocd-image-updater.argoproj.io/image-list: auxiliary-service=575907498612.dkr.ecr.us-east-1.amazonaws.com/k-challenge-dev-auxiliary-service
-    argocd-image-updater.argoproj.io/write-back-method: git
-    argocd-image-updater.argoproj.io/git-branch: main
-    argocd-image-updater.argoproj.io/kustomize-image-update: "true"
-    argocd-image-updater.argoproj.io/kustomize-path: kubernetes/overlays/dev
-    argocd-image-updater.argoproj.io/update-strategy: latest
-    argocd-image-updater.argoproj.io/write-back-target: kustomization
 spec:
   replicas: 2
   selector:
@@ -31,63 +19,62 @@ spec:
     spec:
       serviceAccountName: k-challenge-app-sa
       imagePullSecrets:
-      - name: ecr-registry-secret
+        - name: ecr-registry-secret
       containers:
-      - name: auxiliary-service
-        image: auxiliary-service:latest
-        imagePullPolicy: Always
-        ports:
-        - containerPort: 3001
-          name: http
-        env:
-        - name: PORT
-          valueFrom:
-            configMapKeyRef:
-              name: k-challenge-config
-              key: AUXILIARY_SERVICE_PORT
-        - name: VERSION
-          valueFrom:
-            configMapKeyRef:
-              name: k-challenge-config
-              key: VERSION
-        - name: AWS_DEFAULT_REGION
-          valueFrom:
-            configMapKeyRef:
-              name: k-challenge-config
-              key: AWS_DEFAULT_REGION
-        # AWS credentials from Secret (for local K8s)
-        # For EKS with IRSA, remove these and use Service Account annotation instead
-        - name: AWS_ACCESS_KEY_ID
-          valueFrom:
-            secretKeyRef:
-              name: aws-credentials
-              key: AWS_ACCESS_KEY_ID
-        - name: AWS_SECRET_ACCESS_KEY
-          valueFrom:
-            secretKeyRef:
-              name: aws-credentials
-              key: AWS_SECRET_ACCESS_KEY
-        livenessProbe:
-          httpGet:
-            path: /health
-            port: 3001
-          initialDelaySeconds: 30
-          periodSeconds: 10
-          timeoutSeconds: 5
-          failureThreshold: 3
-        readinessProbe:
-          httpGet:
-            path: /health
-            port: 3001
-          initialDelaySeconds: 10
-          periodSeconds: 5
-          timeoutSeconds: 3
-          failureThreshold: 3
-        resources:
-          requests:
-            memory: "128Mi"
-            cpu: "100m"
-          limits:
-            memory: "256Mi"
-            cpu: "500m"
-
+        - name: auxiliary-service
+          image: auxiliary-service:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 3001
+              name: http
+          env:
+            - name: PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: k-challenge-config
+                  key: AUXILIARY_SERVICE_PORT
+            - name: VERSION
+              valueFrom:
+                configMapKeyRef:
+                  name: k-challenge-config
+                  key: VERSION
+            - name: AWS_DEFAULT_REGION
+              valueFrom:
+                configMapKeyRef:
+                  name: k-challenge-config
+                  key: AWS_DEFAULT_REGION
+            # AWS credentials from Secret (for local K8s)
+            # For EKS with IRSA, remove these and use Service Account annotation instead
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: aws-credentials
+                  key: AWS_ACCESS_KEY_ID
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: aws-credentials
+                  key: AWS_SECRET_ACCESS_KEY
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 3001
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 3001
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "256Mi"
+              cpu: "500m"
