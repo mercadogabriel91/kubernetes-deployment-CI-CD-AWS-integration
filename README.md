@@ -255,6 +255,19 @@ kubectl get deployment auxiliary-service -n k-challenge-namespace -o jsonpath='{
 kubectl describe application k-challenge-app -n argocd | grep -A 20 "History:"
 ```
 
+## 📸 Evidence (screenshots here)
+
+## Health endpoint  
+![Health check](docs/health-endpoint.png)
+## Parameters endpoint  
+![Parameters endpoint](docs/parameters-endpoint.png)
+## Buckets endpoint  
+![Buckets endpoint](docs/buckets-endpoint.png)
+## Parameter by name endpoint
+![Parameter by name endpoint](docs/param-name-endpoint.png)
+## GitHub Actions Workflow
+![Actions run](docs/github-workflows.png)
+
 ## 🎯 Features
 
 - ✅ **Full GitOps** - Git as single source of truth
@@ -266,9 +279,9 @@ kubectl describe application k-challenge-app -n argocd | grep -A 20 "History:"
 - ✅ **Auto-sync** - Argo CD automatically syncs Git changes
 - ✅ **Rollback Support** - Argo CD maintains deployment history
 
-## 📝 License
+## 📝 License (none take what you want)
 
-This project is part of the Kantox Cloud Engineer Challenge.
+This project is part of the K Cloud Engineer Challenge.
 
 ## 🤝 Contributing
 
