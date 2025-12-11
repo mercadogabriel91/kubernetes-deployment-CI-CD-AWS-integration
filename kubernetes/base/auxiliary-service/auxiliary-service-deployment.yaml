@@ -11,7 +11,7 @@ metadata:
     # Registry URL is injected via Kustomize replacements from External Secrets Operator Secret
     # Format: image-name=registry/repository
     # Placeholder will be replaced by Kustomize at build time (no hardcoded values in Git)
-    argocd-image-updater.argoproj.io/image-list: auxiliary-service=${ECR_REGISTRY}/k-challenge-dev-auxiliary-service
+    argocd-image-updater.argoproj.io/image-list: auxiliary-service=575907498612.dkr.ecr.us-east-1.amazonaws.com/k-challenge-dev-auxiliary-service
     argocd-image-updater.argoproj.io/write-back-method: git
     argocd-image-updater.argoproj.io/git-branch: main
     argocd-image-updater.argoproj.io/kustomize-image-update: "true"
