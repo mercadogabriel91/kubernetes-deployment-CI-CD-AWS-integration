@@ -14,7 +14,7 @@ metadata:
     # Image list: Specify which images to track (registry URL injected by GitHub Action)
     # Format: image-alias=registry/repository
     # The registry URL is dynamically injected from Parameter Store via GitHub Action
-    argocd-image-updater.argoproj.io/image-list: auxiliary-service=${ECR_REGISTRY}/k-challenge-dev-auxiliary-service,main-api=${ECR_REGISTRY}/k-challenge-dev-main-api
+    argocd-image-updater.argoproj.io/image-list: auxiliary-service=575907498612.dkr.ecr.us-east-1.amazonaws.com/k-challenge-dev-auxiliary-service,main-api=575907498612.dkr.ecr.us-east-1.amazonaws.com/k-challenge-dev-main-api
     argocd-image-updater.argoproj.io/write-back-method: git
     argocd-image-updater.argoproj.io/git-branch: main
     # Git credentials secret (created separately)
