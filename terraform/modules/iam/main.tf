@@ -185,3 +185,71 @@ resource "aws_iam_role_policy" "kubernetes_service_account" {
   })
 }
 
+# IAM Role for Argo CD Image Updater (IRSA)
+# This role allows Image Updater to access ECR to scan for new images
+# Note: This requires the EKS cluster OIDC provider to be created first
+resource "aws_iam_role" "argocd_image_updater" {
+  count = var.eks_cluster_name != "" && var.eks_oidc_provider_id != "" ? 1 : 0
+
+  name = "${var.project_name}-${var.environment}-argocd-image-updater"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Principal = {
+          Federated = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:oidc-provider/oidc.eks.${data.aws_region.current.name}.amazonaws.com/id/${var.eks_oidc_provider_id}"
+        }
+        Action = "sts:AssumeRoleWithWebIdentity"
+        Condition = {
+          StringEquals = {
+            "oidc.eks.${data.aws_region.current.name}.amazonaws.com/id/${var.eks_oidc_provider_id}:sub" = "system:serviceaccount:argocd:argocd-image-updater"
+            "oidc.eks.${data.aws_region.current.name}.amazonaws.com/id/${var.eks_oidc_provider_id}:aud" = "sts.amazonaws.com"
+          }
+        }
+      }
+    ]
+  })
+
+  tags = {
+    Name        = "${var.project_name}-${var.environment}-argocd-image-updater"
+    Environment = var.environment
+    Purpose     = "Argo CD Image Updater ECR Access"
+  }
+}
+
+# IAM Policy for Argo CD Image Updater
+# Grants permissions to read from ECR to scan for new images
+resource "aws_iam_role_policy" "argocd_image_updater" {
+  count = var.eks_cluster_name != "" && var.eks_oidc_provider_id != "" ? 1 : 0
+
+  name = "${var.project_name}-${var.environment}-argocd-image-updater-policy"
+  role = aws_iam_role.argocd_image_updater[0].id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "ecr:GetAuthorizationToken",
+          "ecr:BatchCheckLayerAvailability",
+          "ecr:GetDownloadUrlForLayer",
+          "ecr:BatchGetImage",
+          "ecr:DescribeImages",
+          "ecr:DescribeRepositories"
+        ]
+        Resource = length(var.ecr_repository_arns) > 0 ? var.ecr_repository_arns : ["*"]
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "ecr:GetAuthorizationToken"
+        ]
+        Resource = "*"
+      }
+    ]
+  })
+}
+

@@ -38,6 +38,7 @@ override.tf
 override.tf.json
 *_override.tf
 *_override.tf.json
+terraform/terraform.tfstate.backup
 
 # Kubernetes Secrets
 kubernetes/**/aws-credentials-secret.yaml
@@ -50,3 +51,18 @@ kubernetes/**/kustomization.yaml''
 kubernetes/**/kustomization.yaml.bak
 kubernetes/**/kustomization.yaml.tmp
 kubernetes/**/kustomization.yaml.original
+
+# Old/unused scripts (replaced by GitHub Actions and External Secrets Operator)
+scripts/update-ecr-configmap.sh
+scripts/update-image-updater-annotations.sh
+scripts/update-image-updater-annotations-safe.sh
+
+# Old/unused ConfigMaps (replaced by External Secrets Operator)
+argocd/ecr-registry-configmap.yaml
+kubernetes/base/shared/ecr-registry-configmap.yaml
+
+# Empty directories
+argocd/sync-hooks/
+
+# Personal documentation (not needed in repo)
+CI_CD_FLOW.md

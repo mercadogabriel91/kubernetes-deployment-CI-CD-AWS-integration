@@ -10,7 +10,12 @@ data:
       prefix: "*"
       api_url: https://api.ecr.*.amazonaws.com
       default: true
-      credentials: ext:/scripts/ecr-login.sh
+      # Use IRSA (IAM Roles for Service Accounts) for ECR authentication
+      # The Image Updater Service Account must have eks.amazonaws.com/role-arn annotation
+      # This is more secure than static credentials
+      # For IRSA, credentials are handled automatically by AWS SDK
+      # Remove credentials line when using IRSA (AWS SDK will use Service Account role)
+      # credentials: ext:/scripts/ecr-login.sh  # Only needed if NOT using IRSA
       credsexpiry: 12h
       ping: yes
   git.user: "argocd-image-updater"
