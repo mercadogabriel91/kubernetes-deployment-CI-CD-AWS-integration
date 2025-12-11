@@ -12,10 +12,10 @@ resources:
 images:
   - name: auxiliary-service
     newName: 575907498612.dkr.ecr.us-east-1.amazonaws.com/k-challenge-dev-auxiliary-service
-    newTag: latest
+    newTag: f4541eb9641d8d4908076da138ae4e233c3d432d
   - name: main-api
     newName: 575907498612.dkr.ecr.us-east-1.amazonaws.com/k-challenge-dev-main-api
-    newTag: latest
+    newTag: f4541eb9641d8d4908076da138ae4e233c3d432d
 # Note: We don't use commonLabels here because it would modify
 # Deployment selectors (which are immutable). Labels are defined
 # directly in the deployment files.
